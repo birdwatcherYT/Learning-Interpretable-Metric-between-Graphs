@@ -4,21 +4,6 @@ using namespace std;
 
 namespace GSPAN {
 
-    /* Build a DFS code from a given graph.
-     */
-    void DFSCode::fromGraph(Graph &g) {
-        clear();
-
-        EdgeList edges;
-        for (unsigned int from = 0; from < g.size(); ++from) {
-            if (get_forward_root(g, g[from], edges) == false)
-                continue;
-
-            for (EdgeList::iterator it = edges.begin(); it != edges.end(); ++it)
-                push(from, (*it)->to, g[(*it)->from].label, (*it)->elabel, g[(*it)->to].label);
-        }
-    }
-
     bool DFSCode::toGraph(Graph &g) {
         g.clear();
 

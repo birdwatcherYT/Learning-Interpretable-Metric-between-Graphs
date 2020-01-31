@@ -191,151 +191,10 @@ namespace GSPAN {
         }
         return size;
     }
-
-    void gSpan::mining(vecVec& Xt, PatternSupportList& patternSupportList) {
-        Xt.clear();
-        patternSupportList.clear();
-        visit=0;
-
-        /////////////////////////////////////////////////////////////
-        for (map<unsigned int, unsigned int>::iterator it = singleVertexLabelTRAIN.begin () ; it != singleVertexLabelTRAIN.end () ; ++it) {
-            if (it->second < minsup)
-                continue;
-            ++visit;
-
-            DFS_CODE.createSingleVertex(it->first);
-            patternSupportList.push_back(pair<DFSCode, int>(DFS_CODE, it->second));
-            DFS_CODE.clear();
-
-            vector<bool> x(TRAIN.size(),0);
-            for (map<unsigned int, map<unsigned int, unsigned int> >::iterator cur = singleVertexTRAIN.begin(); cur != singleVertexTRAIN.end(); ++cur)
-                x[cur->first] = (cur->second[it->first]>0);
-            Xt.push_back(x);
-        }
-        /////////////////////////////////////////////////////////////
-
-        EdgeList edges;
-        Projected_map3 root;
-
-        for (unsigned int id = 0; id < TRAIN.size(); ++id) {
-            Graph &g = TRAIN[id];
-            for (unsigned int from = 0; from < g.size(); ++from) {
-                if (get_forward_root(g, g[from], edges)) {
-                    for (EdgeList::iterator it = edges.begin(); it != edges.end(); ++it)
-                        root[g[from].label][(*it)->elabel][g[(*it)->to].label].push(id, *it, 0);
-                }
-            }
-        }
-
-        for (Projected_iterator3 fromlabel = root.begin(); fromlabel != root.end(); ++fromlabel) {
-            for (Projected_iterator2 elabel = fromlabel->second.begin(); elabel != fromlabel->second.end(); ++elabel) {
-                for (Projected_iterator1 tolabel = elabel->second.begin(); tolabel != elabel->second.end(); ++tolabel) {
-                    /* Build the initial two-node graph.  It will be grown
-                     * recursively within project.
-                     */
-                    DFS_CODE.push(0, 1, fromlabel->first, elabel->first, tolabel->first);
-                    __mining(tolabel->second, Xt, patternSupportList);
-                    DFS_CODE.pop();
-                }
-            }
-        }
-        cout<<"mining:visit = "<<visit<<endl;
-    }
-
-    /* Recursive subgraph mining function (similar to subprocedure 1
-     * Subgraph_Mining in [Yan2002]).
-     */
-    void gSpan::__mining(Projected &projected, vecVec& Xt, PatternSupportList& patternSupportList) {
-        /* Check if the pattern is frequent enough.
-         */
-        unsigned int sup = support(projected);
-        if (sup < minsup || DFS_CODE.nodeCount() > maxpat)
-            return;
-        /* The minimal DFS code check is more expensive than the support check,
-         * hence it is done now, after checking the support.
-         */
-        if (!is_min())
-            return;
-
-        ++visit;
-        patternSupportList.push_back(pair<DFSCode, int>(DFS_CODE, sup));
-
-        vector<bool> x(TRAIN.size(),0);
-        for (Projected::iterator cur = projected.begin(); cur != projected.end(); ++cur)
-            x[cur->id] = 1;
-        Xt.push_back(x);
-
-        /* We just outputted a frequent subgraph.  As it is frequent enough, so
-         * might be its (n+1)-extension-graphs, hence we enumerate them all.
-         */
-        const RMPath &rmpath = DFS_CODE.buildRMPath();
-        int minlabel = DFS_CODE[0].fromlabel;
-        int maxtoc = DFS_CODE[rmpath[0]].to;
-
-        Projected_map3 new_fwd_root;
-        Projected_map2 new_bck_root;
-        EdgeList edges;
-
-        /* Enumerate all possible one edge extensions of the current substructure.
-         */
-        for (unsigned int n = 0; n < projected.size(); ++n) {
-
-            unsigned int id = projected[n].id;
-            PDFS *cur = &projected[n];
-            History history(TRAIN[id], cur);
-
-            // XXX: do we have to change something here for directed edges?
-
-            // backward
-            for (int i = (int) rmpath.size() - 1; i >= 1; --i) {
-                Edge *e = get_backward(TRAIN[id], history[rmpath[i]], history[rmpath[0]], history);
-                if (e)
-                    new_bck_root[DFS_CODE[rmpath[i]].from][e->elabel].push(id, e, cur);
-            }
-
-            // pure forward
-            // FIXME: here we pass a too large e->to (== history[rmpath[0]]->to
-            // into get_forward_pure, such that the assertion fails.
-            //
-            // The problem is:
-            // history[rmpath[0]]->to > TRAIN[id].size()
-            if (get_forward_pure(TRAIN[id], history[rmpath[0]], minlabel, history, edges))
-                for (EdgeList::iterator it = edges.begin(); it != edges.end(); ++it)
-                    new_fwd_root[maxtoc][(*it)->elabel][TRAIN[id][(*it)->to].label].push(id, *it, cur);
-
-            // backtracked forward
-            for (int i = 0; i < (int) rmpath.size(); ++i)
-                if (get_forward_rmpath(TRAIN[id], history[rmpath[i]], minlabel, history, edges))
-                    for (EdgeList::iterator it = edges.begin(); it != edges.end(); ++it)
-                        new_fwd_root[DFS_CODE[rmpath[i]].from][(*it)->elabel][TRAIN[id][(*it)->to].label].push(id, *it, cur);
-        }
-
-        /* Test all extended substructures.
-         */
-        // backward
-        for (Projected_iterator2 to = new_bck_root.begin(); to != new_bck_root.end(); ++to) {
-            for (Projected_iterator1 elabel = to->second.begin(); elabel != to->second.end(); ++elabel) {
-                DFS_CODE.push(maxtoc, to->first, -1, elabel->first, -1);
-                __mining(elabel->second, Xt, patternSupportList);
-                DFS_CODE.pop();
-            }
-        }
-
-        // forward
-        for (Projected_riterator3 from = new_fwd_root.rbegin(); from != new_fwd_root.rend(); ++from) {
-            for (Projected_iterator2 elabel = from->second.begin(); elabel != from->second.end(); ++elabel) {
-                for (Projected_iterator1 tolabel = elabel->second.begin(); tolabel != elabel->second.end(); ++tolabel) {
-                    DFS_CODE.push(from->first, maxtoc + 1, -1, elabel->first, tolabel->first);
-                    __mining(tolabel->second, Xt, patternSupportList);
-                    DFS_CODE.pop();
-                }
-            }
-        }
-        return;
-    }
     
     tree<gSpan::Save>::iterator gSpan::createRoot(){
         if (Tree.empty()){
+            DFS_CODE.clear();
             EdgeList edges;
             tree<Save>::iterator root=Tree.insert(Tree.begin(), Save());
             
@@ -375,6 +234,7 @@ namespace GSPAN {
     
     void gSpan::createChildren(const tree<gSpan::Save>::iterator &node){
         if (!node->nextCheck){
+            DFS_CODE = node->dfscode;
             const RMPath &rmpath = DFS_CODE.buildRMPath();
             int minlabel = DFS_CODE[0].fromlabel;
             int maxtoc = DFS_CODE[rmpath[0]].to;
@@ -476,8 +336,6 @@ namespace GSPAN {
     void gSpan::__getMaxValue(const tree<Save>::iterator &node, double& maxval, const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD) {
         ++visit;
 
-        DFS_CODE=node->dfscode;
-
         double dot = 0;
         double dotSPPC = 0;
         for (int i = 0; i < TRAIN.size(); ++i) {
@@ -555,8 +413,6 @@ namespace GSPAN {
     }
 
     void gSpan::__safePatternPruning(double lambda_prev, double lambda, const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD, double z2, double epsilon_d, const tree<Save>::iterator &node, vecVec& Xt, std::vector<DFSCode>& patternList) {
-        
-        DFS_CODE=node->dfscode;
 
         if (node->pruningScore<=lambda){
             return;
@@ -652,8 +508,6 @@ namespace GSPAN {
     }
 
     double gSpan::__workingSetPruning(double lambda, const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD, const tree<Save>::iterator &node, vecVec& Xt, std::vector<DFSCode>& patternList) {
-        
-        DFS_CODE=node->dfscode;
 
         double m_alpha_lambda_eta2=0;
         if (node->pruningScore<=lambda){
@@ -1294,151 +1148,6 @@ namespace GSPAN {
         return f_micro;
     }
 
-    vector< vector<double> > gSpan::euclid() {
-        visit=0;
-        vector<Graph> temp(TEST);
-        temp.insert(temp.end(),TRAIN.begin(),TRAIN.end() );
-        
-        vector< vector<double> > Euclid(testSize);
-        for (vector<double>& v : Euclid)
-            v.resize(trainSize, 0);
-
-        /////////////////////////////////////////////////////////////
-        for (map<unsigned int, unsigned int>::iterator it = singleVertexLabelTRAIN.begin () ; it != singleVertexLabelTRAIN.end () ; ++it) {
-            // trainのサポートによる枝刈り
-            if (it->second < minsup)
-                continue;
-            ++visit;
-
-            vector<bool> xTRAIN(TRAIN.size(),0);
-            for (map<unsigned int, map<unsigned int, unsigned int> >::iterator cur = singleVertexTRAIN.begin(); cur != singleVertexTRAIN.end(); ++cur)
-                xTRAIN[cur->first] = (cur->second[it->first]>0);
-            vector<bool> xTEST(TEST.size(),0);
-            for (map<unsigned int, map<unsigned int, unsigned int> >::iterator cur = singleVertexTEST.begin(); cur != singleVertexTEST.end(); ++cur)
-                xTEST[cur->first] = (cur->second[it->first]>0);
-
-            for (size_t i = 0; i < testSize; ++i)
-                for (size_t j = 0; j < trainSize; ++j)
-                    Euclid[i][j] += (xTEST[i]!=xTRAIN[j]);
-        }
-        /////////////////////////////////////////////////////////////
-
-        EdgeList edges;
-        Projected_map3 root;
-
-        for (unsigned int id = 0; id < temp.size(); ++id) {
-            Graph &g = temp[id];
-            for (unsigned int from = 0; from < g.size(); ++from) {
-                if (get_forward_root(g, g[from], edges)) {
-                    for (EdgeList::iterator it = edges.begin(); it != edges.end(); ++it)
-                        root[g[from].label][(*it)->elabel][g[(*it)->to].label].push(id, *it, 0);
-                }
-            }
-        }
-
-        for (Projected_iterator3 fromlabel = root.begin(); fromlabel != root.end(); ++fromlabel) {
-            for (Projected_iterator2 elabel = fromlabel->second.begin(); elabel != fromlabel->second.end(); ++elabel) {
-                for (Projected_iterator1 tolabel = elabel->second.begin(); tolabel != elabel->second.end(); ++tolabel) {
-                    /* Build the initial two-node graph.  It will be grown
-                     * recursively within project.
-                     */
-                    DFS_CODE.push(0, 1, fromlabel->first, elabel->first, tolabel->first);
-                    __euclid(tolabel->second, temp, Euclid);
-                    DFS_CODE.pop();
-                }
-            }
-        }
-        cout<<"euclid:visit = "<<visit<<endl;
-        return Euclid;
-    }
-
-    void gSpan::__euclid(Projected &projected, vector<Graph> &temp, vector< vector< double > >& Euclid) {
-        if (DFS_CODE.nodeCount() > maxpat)
-            return;
-        if (!is_min())
-            return;
-
-        vector<bool> x(temp.size());
-        for (Projected::iterator cur = projected.begin(); cur != projected.end(); ++cur)
-            x[cur->id] = 1;
-
-        int sup=0;
-        // trainのサポートによる枝刈り
-        for(int i=0;i<trainSize;++i )
-            sup += x[testSize+i];
-        if (sup < minsup)
-            return;
-
-        ++visit;
-        for (size_t i = 0; i < testSize; ++i)
-            for (size_t j = 0; j < trainSize; ++j)
-                Euclid[i][j] += (x[i]!=x[testSize+j]);
-
-        const RMPath &rmpath = DFS_CODE.buildRMPath();
-        int minlabel = DFS_CODE[0].fromlabel;
-        int maxtoc = DFS_CODE[rmpath[0]].to;
-
-        Projected_map3 new_fwd_root;
-        Projected_map2 new_bck_root;
-        EdgeList edges;
-
-        /* Enumerate all possible one edge extensions of the current substructure.
-         */
-        for (unsigned int n = 0; n < projected.size(); ++n) {
-
-            unsigned int id = projected[n].id;
-            PDFS *cur = &projected[n];
-            History history(temp[id], cur);
-
-            // XXX: do we have to change something here for directed edges?
-
-            // backward
-            for (int i = (int) rmpath.size() - 1; i >= 1; --i) {
-                Edge *e = get_backward(temp[id], history[rmpath[i]], history[rmpath[0]], history);
-                if (e)
-                    new_bck_root[DFS_CODE[rmpath[i]].from][e->elabel].push(id, e, cur);
-            }
-
-            // pure forward
-            // FIXME: here we pass a too large e->to (== history[rmpath[0]]->to
-            // into get_forward_pure, such that the assertion fails.
-            //
-            // The problem is:
-            // history[rmpath[0]]->to > temp[id].size()
-            if (get_forward_pure(temp[id], history[rmpath[0]], minlabel, history, edges))
-                for (EdgeList::iterator it = edges.begin(); it != edges.end(); ++it)
-                    new_fwd_root[maxtoc][(*it)->elabel][temp[id][(*it)->to].label].push(id, *it, cur);
-
-            // backtracked forward
-            for (int i = 0; i < (int) rmpath.size(); ++i)
-                if (get_forward_rmpath(temp[id], history[rmpath[i]], minlabel, history, edges))
-                    for (EdgeList::iterator it = edges.begin(); it != edges.end(); ++it)
-                        new_fwd_root[DFS_CODE[rmpath[i]].from][(*it)->elabel][temp[id][(*it)->to].label].push(id, *it, cur);
-        }
-
-        /* Test all extended substructures.
-         */
-        // backward
-        for (Projected_iterator2 to = new_bck_root.begin(); to != new_bck_root.end(); ++to) {
-            for (Projected_iterator1 elabel = to->second.begin(); elabel != to->second.end(); ++elabel) {
-                DFS_CODE.push(maxtoc, to->first, -1, elabel->first, -1);
-                __euclid(elabel->second, temp, Euclid);
-                DFS_CODE.pop();
-            }
-        }
-
-        // forward
-        for (Projected_riterator3 from = new_fwd_root.rbegin(); from != new_fwd_root.rend(); ++from) {
-            for (Projected_iterator2 elabel = from->second.begin(); elabel != from->second.end(); ++elabel) {
-                for (Projected_iterator1 tolabel = elabel->second.begin(); tolabel != elabel->second.end(); ++tolabel) {
-                    DFS_CODE.push(from->first, maxtoc + 1, -1, elabel->first, tolabel->first);
-                    __euclid(tolabel->second, temp, Euclid);
-                    DFS_CODE.pop();
-                }
-            }
-        }
-        return;
-    }
 
     double gSpan::kernel(const std::string &mat){
         ifstream ifs(mat);

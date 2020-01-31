@@ -119,10 +119,6 @@ namespace GSPAN {
          */
         bool toGraph(Graph &);
 
-        /* Clear current DFS code and build code from the given graph.
-         */
-        void fromGraph(Graph &g);
-
         /* Return number of nodes in the graph.
          */
         unsigned int nodeCount(void);
@@ -286,7 +282,6 @@ namespace GSPAN {
 
         std::map<unsigned int, unsigned int> support_counts(Projected &projected);
         unsigned int support(Projected&);
-        void __mining(Projected &projected, vecVec& Xt, PatternSupportList& patternSupportList);
         void __getMaxValue(const tree<Save>::iterator &node, double& maxval, const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD);
         void __safePatternPruning(double lambda_prev, double lambda, const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD, double z2, double epsilon, const tree<Save>::iterator &node, vecVec& Xt, std::vector<DFSCode>& patternList);
         std::istream &read(std::istream &, double train, bool ignoreEdgeLabel, int VertexLabelDegreeQuantization);
@@ -294,21 +289,18 @@ namespace GSPAN {
         void createChildren(const tree<Save>::iterator &node);
 
         void __getTestX(Projected &projected, vecVec& Xt, const std::vector< DFSCode >& dfscodes) ;
-        void __euclid(Projected &projected, std::vector<Graph> &temp, std::vector< std::vector< double > >& Euclid) ;
 
         void setKsample(const std::string &kernel);
         void nearest(const std::string &mat);
     public:
 
         gSpan(const std::string& filename, unsigned int minsup, unsigned int maxpat, double train, int Ksample, bool ignoreEdgeLabel, int VertexLabelDegreeQuantization, bool directed = false);
-        void mining(vecVec& Xt, PatternSupportList& patternSupportList);
         double getMaxValue(const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD);
         void safePatternPruning(double lambda_prev, double lambda, const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD, double z2, double epsilon, vecVec& Xt, std::vector<DFSCode>& patternList);
         void regularizationPath(double L=1, double U=0.95, double eta=1, int splitNum = 100, int maxloop = 100000, double eps = 1e-6, int freq = 5, double R=0.96, const std::string &kernel="");
         vecVec getTestX(const std::vector< DFSCode >& dfscodes); 
         double error(const std::vector< std::vector<double> > &distance, const int K, int from, int to) const;
         double f_measure(const std::vector< std::vector<double> > &distance, const int K, int from, int to, bool macro=true) const;
-        std::vector< std::vector<double> > euclid();
         double kernel(const std::string &mat);
     };
 
