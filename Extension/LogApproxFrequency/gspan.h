@@ -211,7 +211,7 @@ namespace GSPAN {
     bool get_forward_root(Graph&, Vertex&, EdgeList &);
     Edge *get_backward(Graph&, Edge *, Edge *, History&);
 
-    typedef std::vector< std::vector<bool> > vecVec;
+    typedef std::vector< std::vector<double> > vecVec;
     typedef std::vector< std::pair< DFSCode, int> > PatternSupportList;
 
     class gSpan {
@@ -227,7 +227,7 @@ namespace GSPAN {
         
         class Save {
         public:
-            std::vector<bool> x;
+            std::vector<double> x;
             DFSCode dfscode;
             Projected *projected=NULL;
             Projected_map3 new_fwd_root;
@@ -236,7 +236,7 @@ namespace GSPAN {
             double screeningScore=DBL_MAX;
             double pruningScore=DBL_MAX;
             Save(){}
-            Save(const std::vector<bool> &x, const DFSCode &dfscode, Projected *projected){
+            Save(const std::vector<double> &x, const DFSCode &dfscode, Projected *projected){
                 this->x=x, this->dfscode=dfscode, this->projected=projected;
             }
         };
@@ -292,6 +292,10 @@ namespace GSPAN {
 
         void setKsample(const std::string &kernel);
         void nearest(const std::string &mat);
+        
+        std::vector< double > approximate_subgraph_counts(const Projected &projected, size_t vector_size)const;
+        std::vector< double > subgraph_counts(const Projected &projected, size_t vector_size)const;//部分グラフの重複なし個数カウント
+        int __subgraph_counts(const std::vector< std::set<int> > &nodeIDs, int begin, std::set<int> current, int depth)const;//部分グラフの重複なし個数カウント
     public:
 
         gSpan(const std::string& filename, unsigned int minsup, unsigned int maxpat, double train, int Ksample, bool ignoreEdgeLabel, int VertexLabelDegreeQuantization, bool directed = false);

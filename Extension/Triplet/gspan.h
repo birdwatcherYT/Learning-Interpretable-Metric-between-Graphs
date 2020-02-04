@@ -281,9 +281,9 @@ namespace GSPAN {
 
         std::map<unsigned int, unsigned int> support_counts(Projected &projected);
         unsigned int support(Projected&);
-        void __getMaxValue(const tree<Save>::iterator &node, double& maxval, const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD);
-        void __safePatternPruning(double lambda_prev, double lambda, const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD, double z2, double epsilon, const tree<Save>::iterator &node, vecVec& Xt, std::vector<DFSCode>& patternList);
-        double __workingSetPruning(double lambda, const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD, const tree<Save>::iterator &node, vecVec& Xt, std::vector<DFSCode>& patternList);
+        void __getMaxValue(const tree<Save>::iterator &node, double& maxval, const std::vector< std::vector< std::vector<double> > >& zD);
+        void __safePatternPruning(double lambda_prev, double lambda, const std::vector< std::vector< std::vector<double> > >& zD, double z2, double epsilon, const tree<Save>::iterator &node, vecVec& Xt, std::vector<DFSCode>& patternList);
+        double __workingSetPruning(double lambda, const std::vector< std::vector< std::vector<double> > >& zD, const tree<Save>::iterator &node, vecVec& Xt, std::vector<DFSCode>& patternList);
         std::istream &read(std::istream &, double train, bool ignoreEdgeLabel, int VertexLabelDegreeQuantization);
         tree<Save>::iterator createRoot();
         void createChildren(const tree<Save>::iterator &node);
@@ -295,10 +295,10 @@ namespace GSPAN {
     public:
 
         gSpan(const std::string& filename, unsigned int minsup, unsigned int maxpat, double train, int Ksample, bool ignoreEdgeLabel, int VertexLabelDegreeQuantization, bool directed = false);
-        double getMaxValue(const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD);
-        void safePatternPruning(double lambda_prev, double lambda, const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD, double z2, double epsilon, vecVec& Xt, std::vector<DFSCode>& patternList);
-        double workingSetPruning(double lambda, const std::vector< std::vector<double> >& zS, const std::vector< std::vector<double> >& zD, vecVec& Xt, std::vector<DFSCode>& patternList);
-        void regularizationPath(double L=1, double U=0.95, double eta=1, int splitNum = 100, int maxloop = 100000, double eps = 1e-6, int freq = 5, double R=0.96, const std::string &kernel="");
+        double getMaxValue(const std::vector< std::vector< std::vector<double> > >& zD);
+        void safePatternPruning(double lambda_prev, double lambda, const std::vector< std::vector< std::vector<double> > >& zD, double z2, double epsilon, vecVec& Xt, std::vector<DFSCode>& patternList);
+        double workingSetPruning(double lambda, const std::vector< std::vector< std::vector<double> > >& zD, vecVec& Xt, std::vector<DFSCode>& patternList);
+        void regularizationPath(double L=1, double eta=1, int splitNum = 100, int maxloop = 100000, double eps = 1e-6, int freq = 5, double R=0.96, const std::string &kernel="");
         vecVec getTestX(const std::vector< DFSCode >& dfscodes); 
         double error(const std::vector< std::vector<double> > &distance, const int K, int from, int to) const;
         double f_measure(const std::vector< std::vector<double> > &distance, const int K, int from, int to, bool macro=true) const;

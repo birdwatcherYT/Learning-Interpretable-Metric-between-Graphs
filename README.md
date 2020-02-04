@@ -1,5 +1,7 @@
 # Learning Interpretable Metric between Graphs
-Source code for KDD2019 accepted paper "[Learning Interpretable Metric between Graphs: Convex Formulation and Computation with Graph Mining](https://www.kdd.org/kdd2019/accepted-papers/view/learning-interpretable-metric-between-graphs-convex-formulation-and-computa)"
+Source code for KDD2019 accepted paper "[Learning Interpretable Metric between Graphs: Convex Formulation and Computation with Graph Mining](https://www.kdd.org/kdd2019/accepted-papers/view/learning-interpretable-metric-between-graphs-convex-formulation-and-computa)".
+
+arXiv version is "[Distance Metric Learning for Graph Structured Data](https://arxiv.org/abs/2002.00727)".
 
 ## Abstract
 <div align="center">
@@ -13,17 +15,24 @@ Graph is a standard approach to modeling structured data. Although many machine 
     <img src="./picture/optimization.png", width=1000>
 </div>
 
-There are five programs as follows:
-- `SS&SP`: Perform safe screening and Safe Pruning. 
-- `RSS&RSP`: Perform range-based SS and SP. 
-- `WS&WP`: Perform working-set selection and pruning. 
-- `RSS&RSP+WS&WP`: Perform both RSS&RSP and WS&WP. 
-- `RSS&RSP+WS&WP+FullMetric`: Containing post-processing, in which learning Maharanobis distance. 
+There are eleven programs as follows:
+- `SS&SP`: Performs safe screening (SS) and safe pruning (SP). 
+- `RSS&RSP`: Performs range-based SS (RSS) and SP (RSP). 
+- `WS&WP`: Performs working-set selection (WS) and pruning (WP). 
+- `RSS&RSP+WS&WP`: Performs both RSS&RSP and WS&WP. 
+- `RSS&RSP+WS&WP+FullMetric`: Contains post-processing, in which learns Maharanobis distance. 
+- `Extension`: Contains six programs: 
+    - `Triplet`: Uses a triplet loss formulation. 
+    - `LogApproxFrequency`: Uses *g(x)=log(1+x)* as a graph feature instead of indicator function *g(x)=I(x>0)*, where *x* is approximate frequency without overlap. 
+    - `ASIF`: Uses approximate subgraph isomorphism feature (ASIF) as a graph feature. 
+    - `sim-ASIF`: Uses sim-ASIF, which considers a vertex-label similarity, as a graph feature. 
+    - `Itemset`: For item-set data. 
+    - `Sequence`: For sequence data. 
 
 Each directory has `Makefile`.
 Type `make`, and compile will begin. 
 
-`RSS&RSP+WS&WP+FullMetric` program needs C++ [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) library. 
+`RSS&RSP+WS&WP+FullMetric`-, `Itemset`-, and `Sequence`-program require C++ [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) library. 
 You must change `INCLUDE` variable in `Makefile` as follows:
 ```
 INCLUDE  =  -I[your Eigen library path]

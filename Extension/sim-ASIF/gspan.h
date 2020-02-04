@@ -19,6 +19,9 @@
 #include <climits>
 #include "tree.hh"
 
+#include "WL.hpp"
+class WL;
+
 namespace GSPAN {
 
     template <class T> inline void _swap(T &x, T &y) {
@@ -211,7 +214,7 @@ namespace GSPAN {
     bool get_forward_root(Graph&, Vertex&, EdgeList &);
     Edge *get_backward(Graph&, Edge *, Edge *, History&);
 
-    typedef std::vector< std::vector<bool> > vecVec;
+    typedef std::vector< std::vector<double> > vecVec;
     typedef std::vector< std::pair< DFSCode, int> > PatternSupportList;
 
     class gSpan {
@@ -227,7 +230,7 @@ namespace GSPAN {
         
         class Save {
         public:
-            std::vector<bool> x;
+            std::vector<double> x;
             DFSCode dfscode;
             Projected *projected=NULL;
             Projected_map3 new_fwd_root;
@@ -236,7 +239,7 @@ namespace GSPAN {
             double screeningScore=DBL_MAX;
             double pruningScore=DBL_MAX;
             Save(){}
-            Save(const std::vector<bool> &x, const DFSCode &dfscode, Projected *projected){
+            Save(const std::vector<double> &x, const DFSCode &dfscode, Projected *projected){
                 this->x=x, this->dfscode=dfscode, this->projected=projected;
             }
         };
@@ -248,12 +251,21 @@ namespace GSPAN {
         DFSCode DFS_CODE;
         DFSCode DFS_CODE_IS_MIN;
         Graph GRAPH_IS_MIN;
-
+        //****************************************
+        std::vector<WL> trainWL;
+        std::vector<WL> testWL;
+        int WLloop=2;
+        double featureScale=1.0;
+        double featureThreshold=0.7;
+        double distanceThreshold=-log(featureThreshold)/featureScale;
+        //****************************************
         ////////////////////////////////////////////////////////////////////////////////
     public:
         int trainSize ;
         int testSize ;
         int Ksample ;
+        std::vector< std::vector<double> > vertexLabelDistance;
+        std::map<int, int> vertexLabel2idx;
     private:
         std::set<int> classLabel;
         std::vector< std::vector<int> > sameClass;
@@ -266,15 +278,6 @@ namespace GSPAN {
         unsigned int maxpat;
         bool directed;
         int visit;
-        /////////////////////////////////////////////////////////////
-        /* Singular vertex handling stuff
-         * [graph][vertexlabel] = count.
-         */
-        std::map<unsigned int, std::map<unsigned int, unsigned int> > singleVertexTRAIN;
-        std::map<unsigned int, unsigned int> singleVertexLabelTRAIN;
-        std::map<unsigned int, std::map<unsigned int, unsigned int> > singleVertexTEST;
-        std::map<unsigned int, unsigned int> singleVertexLabelTEST;
-        /////////////////////////////////////////////////////////////
 
         bool is_min();
         bool project_is_min(Projected &);
@@ -288,10 +291,10 @@ namespace GSPAN {
         tree<Save>::iterator createRoot();
         void createChildren(const tree<Save>::iterator &node);
 
-        void __getTestX(Projected &projected, vecVec& Xt, const std::vector< DFSCode >& dfscodes) ;
-
         void setKsample(const std::string &kernel);
         void nearest(const std::string &mat);
+        
+        void computeVertexLabelDistance(const std::vector <Graph> &database);
     public:
 
         gSpan(const std::string& filename, unsigned int minsup, unsigned int maxpat, double train, int Ksample, bool ignoreEdgeLabel, int VertexLabelDegreeQuantization, bool directed = false);
@@ -345,5 +348,7 @@ namespace GSPAN {
     }
     
 };
+
+
 
 #endif // GSPAN_H

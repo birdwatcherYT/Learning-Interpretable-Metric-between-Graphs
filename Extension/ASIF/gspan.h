@@ -19,6 +19,9 @@
 #include <climits>
 #include "tree.hh"
 
+#include "WL.hpp"
+class WL;
+
 namespace GSPAN {
 
     template <class T> inline void _swap(T &x, T &y) {
@@ -248,7 +251,11 @@ namespace GSPAN {
         DFSCode DFS_CODE;
         DFSCode DFS_CODE_IS_MIN;
         Graph GRAPH_IS_MIN;
-
+        //**********************************************
+        std::vector<WL> trainWL;
+        std::vector<WL> testWL;
+        int WLloop=2;
+        //**********************************************
         ////////////////////////////////////////////////////////////////////////////////
     public:
         int trainSize ;
@@ -266,15 +273,6 @@ namespace GSPAN {
         unsigned int maxpat;
         bool directed;
         int visit;
-        /////////////////////////////////////////////////////////////
-        /* Singular vertex handling stuff
-         * [graph][vertexlabel] = count.
-         */
-        std::map<unsigned int, std::map<unsigned int, unsigned int> > singleVertexTRAIN;
-        std::map<unsigned int, unsigned int> singleVertexLabelTRAIN;
-        std::map<unsigned int, std::map<unsigned int, unsigned int> > singleVertexTEST;
-        std::map<unsigned int, unsigned int> singleVertexLabelTEST;
-        /////////////////////////////////////////////////////////////
 
         bool is_min();
         bool project_is_min(Projected &);
@@ -288,10 +286,9 @@ namespace GSPAN {
         tree<Save>::iterator createRoot();
         void createChildren(const tree<Save>::iterator &node);
 
-        void __getTestX(Projected &projected, vecVec& Xt, const std::vector< DFSCode >& dfscodes) ;
-
         void setKsample(const std::string &kernel);
         void nearest(const std::string &mat);
+        
     public:
 
         gSpan(const std::string& filename, unsigned int minsup, unsigned int maxpat, double train, int Ksample, bool ignoreEdgeLabel, int VertexLabelDegreeQuantization, bool directed = false);
@@ -345,5 +342,7 @@ namespace GSPAN {
     }
     
 };
+
+
 
 #endif // GSPAN_H

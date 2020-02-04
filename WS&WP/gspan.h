@@ -248,7 +248,6 @@ namespace GSPAN {
         DFSCode DFS_CODE;
         DFSCode DFS_CODE_IS_MIN;
         Graph GRAPH_IS_MIN;
-        // std::vector < std::vector < int > > Euclid;
 
         ////////////////////////////////////////////////////////////////////////////////
     public:
